@@ -1,15 +1,70 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Analisar PDF</title>
-  <style>
-    body { font-family: sans-serif; padding: 10px; width: 300px; }
-    button { padding: 10px; font-size: 16px; }
-  </style>
-</head>
-<body>
-  <button id="enviarPDF">Analisar PDF</button>
-  <p id="status"></p>
-  <script src="popup.js"></script>
-</body>
-</html>
+<button id="btnUpload" class="upload-button">Analisar PDF com IA</button>
+<p id="status" class="status-msg"></p>
+
+<style>
+  .upload-button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    display: block;
+    font-size: 16px;
+  }
+
+  .upload-button:hover {
+    background-color: #45a049;
+  }
+
+  .status-msg {
+    margin-top: 10px;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+  }
+</style>
+
+<script>
+  document.getElementById("btnUpload").addEventListener("click", () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".pdf";
+
+    input.onchange = async () => {
+      const file = input.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append("arquivo", file, file.name);
+
+      const status = document.getElementById("status");
+      status.textContent = "Enviando para o servidor...";
+
+      try {
+        const response = await fetch("http://localhost:5000/enviar_pdf", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          status.textContent = "Erro ao processar o PDF.";
+          return;
+        }
+
+        const texto = await response.text();
+        status.textContent = "Análise concluída. Abrindo resultado...";
+
+        const novaJanela = window.open();
+        novaJanela.document.write(`
+          <pre style="white-space: pre-wrap; font-family: Arial; padding: 20px;">${texto}</pre>
+        `);
+      } catch (e) {
+        status.textContent = "Erro ao conectar com o servidor Flask.";
+        console.error(e);
+      }
+    };
+
+    input.click();
+  });
+</script>
